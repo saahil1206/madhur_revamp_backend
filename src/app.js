@@ -8,7 +8,11 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok" });
+  res.json({ status: "ok1" });
+});
+
+app.get("/api/version", (req, res) => {
+  res.json({ version: "bazar-route-v1", time: "2026-04-02" });
 });
 
 registerModuleRoutes(app);
