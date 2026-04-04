@@ -11,6 +11,8 @@ const GameResult = sequelize.define(
     result_pana: { type: DataTypes.STRING },
     result_AAkda: { type: DataTypes.STRING },
     after_time: { type: DataTypes.STRING },
+    showtime: { type: DataTypes.STRING },
+    createdby: { type: DataTypes.STRING },
   },
   {
     tableName: "game_result",
