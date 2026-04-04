@@ -15,6 +15,10 @@ app.get("/api/version", (req, res) => {
   res.json({ version: "bazar-route-v1", time: "2026-04-02" });
 });
 
+app.get("/api/version2", (req, res) => {
+  res.json({ version: "bazar-route-v1", time: "2026-04-02" });
+});
+
 registerModuleRoutes(app);
 
 app.use((req, res) => {
