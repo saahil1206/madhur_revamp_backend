@@ -17,23 +17,45 @@ function firstExisting(columns, candidates) {
 }
 
 async function listSites() {
+  try {
+    const tableRows = await sequelize.query("SHOW TABLES LIKE 'web_sites'", {
+      type: QueryTypes.SELECT,
+    });
+    if (tableRows.length) {
+      const webSiteCols = await sequelize.query("SHOW COLUMNS FROM web_sites", {
+        type: QueryTypes.SELECT,
+      });
+      const cols = webSiteCols.map((r) => r.Field);
+      const idCol = firstExisting(cols, ["id"]);
+      const nameCol = firstExisting(cols, ["name", "site_name", "domain", "website"]);
+      if (nameCol && idCol) {
+        const rows = await sequelize.query(
+          `SELECT \`${idCol}\` AS id, \`${nameCol}\` AS name FROM web_sites WHERE \`${nameCol}\` IS NOT NULL AND \`${nameCol}\` <> '' ORDER BY \`${nameCol}\` ASC`,
+          { type: QueryTypes.SELECT }
+        );
+        if (rows.length) return rows;
+      }
+    }
+  } catch (_err) {}
+
   const columns = await getColumns();
   const siteCol = firstExisting(columns, ["site", "site_name", "domain", "website"]);
-  if (!siteCol) {
-    return [{ value: "madhurbazar.com" }];
+  if (siteCol) {
+    const rows = await sequelize.query(
+      `SELECT DISTINCT \`${siteCol}\` AS value FROM game_seo_pages WHERE \`${siteCol}\` IS NOT NULL AND \`${siteCol}\` <> '' ORDER BY \`${siteCol}\` ASC`,
+      { type: QueryTypes.SELECT }
+    );
+    if (rows.length) return rows;
   }
-  const rows = await sequelize.query(
-    `SELECT DISTINCT \`${siteCol}\` AS value FROM game_seo_pages WHERE \`${siteCol}\` IS NOT NULL AND \`${siteCol}\` <> ''`,
-    { type: QueryTypes.SELECT }
-  );
-  return rows.length ? rows : [{ value: "madhurbazar.com" }];
+
+  return [{ id: 1, name: "madhurbazar.com" }];
 }
 
-async function getSeoEntry({ bazarId, seoType, site }) {
+async function getSeoEntry({ siteId, gameId, pageName }) {
   const columns = await getColumns();
-  const bazarCol = firstExisting(columns, ["bazar_id", "game_bazar_id"]);
-  const typeCol = firstExisting(columns, ["seo_type", "type", "page_type"]);
-  const siteCol = firstExisting(columns, ["site", "site_name", "domain", "website"]);
+  const gameIdCol = firstExisting(columns, ["game_id", "bazar_id", "game_bazar_id"]);
+  const pageNameCol = firstExisting(columns, ["page_name", "seo_type", "type", "page_type"]);
+  const siteIdCol = firstExisting(columns, ["site_id", "site", "website_id"]);
   const idCol = firstExisting(columns, ["id"]);
   const metaCol = firstExisting(columns, ["meta_header", "meta", "meta_tag", "meta_data"]);
   const titleCol = firstExisting(columns, ["page_title", "title"]);
@@ -42,17 +64,17 @@ async function getSeoEntry({ bazarId, seoType, site }) {
 
   const where = [];
   const replacements = {};
-  if (bazarCol && bazarId) {
-    where.push(`\`${bazarCol}\` = :bazarId`);
-    replacements.bazarId = Number(bazarId);
+  if (siteIdCol && siteId) {
+    where.push(`\`${siteIdCol}\` = :siteId`);
+    replacements.siteId = Number(siteId);
   }
-  if (typeCol && seoType) {
-    where.push(`\`${typeCol}\` = :seoType`);
-    replacements.seoType = seoType;
+  if (gameIdCol && gameId !== undefined && gameId !== null) {
+    where.push(`\`${gameIdCol}\` = :gameId`);
+    replacements.gameId = Number(gameId);
   }
-  if (siteCol && site) {
-    where.push(`\`${siteCol}\` = :site`);
-    replacements.site = site;
+  if (pageNameCol && pageName) {
+    where.push(`\`${pageNameCol}\` = :pageName`);
+    replacements.pageName = pageName;
   }
 
   const sql = `
@@ -78,9 +100,9 @@ async function getSeoEntry({ bazarId, seoType, site }) {
 
 async function upsertSeoEntry(payload) {
   const columns = await getColumns();
-  const bazarCol = firstExisting(columns, ["bazar_id", "game_bazar_id"]);
-  const typeCol = firstExisting(columns, ["seo_type", "type", "page_type"]);
-  const siteCol = firstExisting(columns, ["site", "site_name", "domain", "website"]);
+  const gameIdCol = firstExisting(columns, ["game_id", "bazar_id", "game_bazar_id"]);
+  const pageNameCol = firstExisting(columns, ["page_name", "seo_type", "type", "page_type"]);
+  const siteIdCol = firstExisting(columns, ["site_id", "site", "website_id"]);
   const idCol = firstExisting(columns, ["id"]);
   const metaCol = firstExisting(columns, ["meta_header", "meta", "meta_tag", "meta_data"]);
   const titleCol = firstExisting(columns, ["page_title", "title"]);
@@ -89,9 +111,9 @@ async function upsertSeoEntry(payload) {
   const createdByCol = firstExisting(columns, ["createdby", "created_by", "updated_by"]);
 
   const data = {};
-  if (bazarCol && payload.bazarId) data[bazarCol] = Number(payload.bazarId);
-  if (typeCol && payload.seoType) data[typeCol] = payload.seoType;
-  if (siteCol && payload.site) data[siteCol] = payload.site;
+  if (gameIdCol && payload.gameId !== undefined && payload.gameId !== null) data[gameIdCol] = Number(payload.gameId);
+  if (pageNameCol && payload.pageName) data[pageNameCol] = payload.pageName;
+  if (siteIdCol && payload.siteId) data[siteIdCol] = Number(payload.siteId);
   if (metaCol) data[metaCol] = payload.metaHeader || "";
   if (titleCol) data[titleCol] = payload.pageTitle || "";
   if (subCol) data[subCol] = payload.subheading || "";

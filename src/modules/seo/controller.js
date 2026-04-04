@@ -12,9 +12,9 @@ async function sites(req, res) {
 async function getEntry(req, res) {
   try {
     const data = await service.getSeoEntry({
-      bazarId: req.query.bazarId,
-      seoType: req.query.seoType,
-      site: req.query.site,
+      siteId: req.query.siteId,
+      gameId: req.query.gameId,
+      pageName: req.query.pageName,
     });
     return res.json(data);
   } catch (error) {
