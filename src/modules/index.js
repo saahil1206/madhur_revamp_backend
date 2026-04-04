@@ -41,6 +41,7 @@ const modules = {
   single: require("./single/routes"),
   spmotor: require("./spmotor/routes"),
   seo: require("./seo/routes"),
+  settings: require("./settings/routes"),
   tripple: require("./tripple/routes"),
   user: require("./user/routes"),
 };
