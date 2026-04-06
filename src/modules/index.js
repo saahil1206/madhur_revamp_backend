@@ -44,6 +44,8 @@ const modules = {
   settings: require("./settings/routes"),
   tripple: require("./tripple/routes"),
   user: require("./user/routes"),
+  seoPublic: require("./seo-public/routes"),
+
 };
 
 function registerModuleRoutes(app) {
