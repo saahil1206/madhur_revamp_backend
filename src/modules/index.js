@@ -36,6 +36,7 @@ const modules = {
   jodi: require("./jodi/routes"),
   jodifamily: require("./jodifamily/routes"),
   multipatti: require("./multipatti/routes"),
+  "lucky-number": require("./lucky-number/routes"),
   plreport: require("./plreport/routes"),
   profile: require("./profile/routes"),
   single: require("./single/routes"),

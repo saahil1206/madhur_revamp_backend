@@ -35,7 +35,7 @@ async function getResults({ bazarId, resultType, fromDate, toDate, date }) {
       {
         model: GameBazar,
         as: "bazar",
-        attributes: ["id", "bazar_name", "Notice"],
+        attributes: ["id", "bazar_name", "Notice", "bazar_category"],
         required: false,
       },
     ],

@@ -11,6 +11,7 @@ const GameBazar = sequelize.define(
     Notice: { type: DataTypes.STRING },
     status: { type: DataTypes.TINYINT },
     visiability: { type: DataTypes.STRING },
+    bazar_category: { type: DataTypes.STRING },
     open_block_time: { type: DataTypes.STRING },
     close_block_time: { type: DataTypes.STRING },
   },
