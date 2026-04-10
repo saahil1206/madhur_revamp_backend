@@ -13,6 +13,14 @@ async function list(query = {}) {
   });
 }
 
+async function getLatest() {
+  const row = await LuckyNumber.findOne({
+    attributes: ["id", "aakda", "pana", "jodi", "motor"],
+    order: [["id", "DESC"]],
+  });
+  return row || { id: null, aakda: "", pana: "", jodi: "", motor: "" };
+}
+
 async function generate(body = {}) {
   const mobileNumber = String(body.mobileNumber || "").replace(/\D/g, "");
   if (mobileNumber.length !== 10) {
@@ -22,10 +30,21 @@ async function generate(body = {}) {
   const luckyDigit = Math.floor(Math.random() * 10);
 
   await LuckyNumberRequest.sync();
-  await LuckyNumberRequest.create({
-    mobile_number: mobileNumber,
-    lucky_digit: luckyDigit,
+  const existing = await LuckyNumberRequest.findOne({
+    where: { mobile_number: mobileNumber },
   });
+
+  if (existing) {
+    await existing.update({
+      lucky_digit: luckyDigit,
+      created_at: new Date(),
+    });
+  } else {
+    await LuckyNumberRequest.create({
+      mobile_number: mobileNumber,
+      lucky_digit: luckyDigit,
+    });
+  }
 
   return {
     mobileNumber,
@@ -61,4 +80,21 @@ async function listRequests(query = {}) {
   };
 }
 
-module.exports = { list, generate, listRequests };
+async function upsertLatest(body = {}) {
+  const payload = {
+    aakda: String(body.aakda || "").trim(),
+    pana: String(body.pana || "").trim(),
+    jodi: String(body.jodi || "").trim(),
+    motor: String(body.motor || "").trim(),
+  };
+
+  const latest = await LuckyNumber.findOne({ order: [["id", "DESC"]] });
+  if (latest) {
+    await latest.update(payload);
+    return latest;
+  }
+
+  return LuckyNumber.create(payload);
+}
+
+module.exports = { list, getLatest, upsertLatest, generate, listRequests };

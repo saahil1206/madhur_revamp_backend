@@ -9,6 +9,24 @@ async function list(req, res) {
   }
 }
 
+async function latest(req, res) {
+  try {
+    const data = await service.getLatest();
+    return res.json(data);
+  } catch (_error) {
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+async function upsertLatest(req, res) {
+  try {
+    const data = await service.upsertLatest(req.body);
+    return res.json(data);
+  } catch (_error) {
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
 async function generate(req, res) {
   try {
     const data = await service.generate(req.body);
@@ -30,4 +48,4 @@ async function listRequests(req, res) {
   }
 }
 
-module.exports = { list, generate, listRequests };
+module.exports = { list, latest, upsertLatest, generate, listRequests };
