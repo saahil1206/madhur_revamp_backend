@@ -4,6 +4,7 @@ const UserAccount = require("./userAccount.model");
 const GameResult = require("./gameResult.model");
 const GameBazar = require("./gameBazar.model");
 const LuckyNumber = require("./luckyNumber.model");
+const LuckyNumberRequest = require("./luckyNumberRequest.model");
 const Notice = require("./notice.model");
 const GameUserBazar = require("./gameUserBazar.model");
 const GameBazarDay = require("./gameBazarDay.model");
@@ -40,6 +41,7 @@ module.exports = {
   GameResult,
   GameBazar,
   LuckyNumber,
+  LuckyNumberRequest,
   Notice,
   GameUserBazar,
   GameBazarDay,
