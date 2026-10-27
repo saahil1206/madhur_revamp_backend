@@ -8,7 +8,71 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+      - name: Deploy Admin via SSM (wait + logs)
+        shell: bash
+        run: |
+          set -e
+          INSTANCE_ID="i-052b7e256950eff26"
 
+          echo "Sending deploy command via SSM..."
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy UAT backend (main)" \
+            --parameters commands="/usr/local/bin/BackendDeployment.sh" \
+            --query "Command.CommandId" \
+            --output text)
+          echo "SSM Command ID: $COMMAND_ID"
+
+          sleep 5
+          echo "Waiting for command to complete..."
+
+          show_logs () {
+            echo "----- STDOUT -----"
+            aws ssm get-command-invocation \
+              --command-id "$COMMAND_ID" \
+              --instance-id "$INSTANCE_ID" \
+              --query "StandardOutputContent" \
+              --output text || true
+            echo "----- STDERR -----"
+            aws ssm get-command-invocation \
+              --command-id "$COMMAND_ID" \
+              --instance-id "$INSTANCE_ID" \
+              --query "StandardErrorContent" \
+              --output text || true
+          }
+
+          MAX_TRIES=120   # 120 x 5s = 10 minutes
+          TRIES=0
+          while true; do
+            STATUS=$(aws ssm get-command-invocation \
+              --command-id "$COMMAND_ID" \
+              --instance-id "$INSTANCE_ID" \
+              --query "Status" \
+              --output text)
+            echo "Current status: $STATUS"
+
+            if [[ "$STATUS" == "Success" ]]; then
+              echo "=== DEPLOY OUTPUT ==="
+              show_logs
+              echo "=== DEPLOY SUCCESS ==="
+              break
+            fi
+
+            if [[ "$STATUS" == "Failed" || "$STATUS" == "Cancelled" || "$STATUS" == "TimedOut" ]]; then
+              echo "=== DEPLOY FAILED ($STATUS) ==="
+              show_logs
+              exit 1
+            fi
+
+            TRIES=$((TRIES+1))
+            if [[ $TRIES -ge $MAX_TRIES ]]; then
+              echo "=== TIMEOUT waiting for SSM command ==="
+              show_logs
+              exit 1
+            fi
+            sleep 5
+          done
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -17,59 +81,4 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-southeast-1
 
-      - name: Deploy Admin via SSM (wait + logs)
-        shell: bash
-        run: |
-          set -e
-
-          INSTANCE_ID="i-052b7e256950eff26"
-
-          echo "Sending admin deploy command via SSM..."
-
-          COMMAND_ID=$(aws ssm send-command \
-            --instance-ids "$INSTANCE_ID" \
-            --document-name "AWS-RunShellScript" \
-            --comment "Deploy UAT-SM (master)" \
-            --parameters commands="/usr/local/bin/BackendDeployment.sh" \
-            --query "Command.CommandId" \
-            --output text)
-
-          echo "SSM Command ID: $COMMAND_ID"
-          echo "Waiting for command to complete..."
-
-          while true; do
-            STATUS=$(aws ssm get-command-invocation \
-              --command-id "$COMMAND_ID" \
-              --instance-id "$INSTANCE_ID" \
-              --query "Status" \
-              --output text)
-
-            echo "Current status: $STATUS"
-
-            if [[ "$STATUS" == "Success" ]]; then
-              echo "=== ADMIN DEPLOY OUTPUT ==="
-
-              aws ssm get-command-invocation \
-                --command-id "$COMMAND_ID" \
-                --instance-id "$INSTANCE_ID" \
-                --query "StandardOutputContent" \
-                --output text
-
-              echo "=== ADMIN DEPLOY SUCCESS ==="
-              break
-            fi
-
-            if [[ "$STATUS" == "Failed" || "$STATUS" == "Cancelled" || "$STATUS" == "TimedOut" ]]; then
-              echo "=== ADMIN DEPLOY FAILED ==="
-
-              aws ssm get-command-invocation \
-                --command-id "$COMMAND_ID" \
-                --instance-id "$INSTANCE_ID" \
-                --query "StandardErrorContent" \
-                --output text
-
-              exit 1
-            fi
-
-            sleep 5
-          done
+      
